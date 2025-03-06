@@ -1,3 +1,6 @@
+mod ast;
+
 fn main() {
-    println!("Hello, world!");
+    let result = ast::process_string("1+2/3".to_string());
+    println!("{:?}", result);
 }
