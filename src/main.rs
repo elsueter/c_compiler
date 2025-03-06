@@ -1,6 +1,8 @@
 mod ast;
 
 fn main() {
-    let result = ast::process_string("1+2/3".to_string());
-    println!("{:?}", result);
+    let result = ast::to_postfix("123+2/3".to_string().into_bytes());
+    for t in result {
+        println!("{:?}", t.val);
+    }
 }

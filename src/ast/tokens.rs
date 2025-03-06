@@ -1,4 +1,4 @@
-enum Arithmetic {
+pub enum Arithmetic {
     Addition,
     Subtraction,
     UPlus,  //unary plus
@@ -18,7 +18,12 @@ enum UnaryOperator {
     Sizeof,
 }
 
-enum Operators {
-    arithmetic,
-    unary_operator,
+enum Operator {
+    Arithmetic,
+    UnaryOperator,
+}
+
+pub enum Token {
+    Operator,
+    Numeric,
 }
