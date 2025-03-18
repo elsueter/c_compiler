@@ -37,36 +37,40 @@ fn tokenise(input: String) -> Vec<Token> {
     for c in input.as_bytes() {
         match c {
             //Whitespace
-            // ' ' | '\n'
-            32 | 10 if cur_token_type as u8 != TokenType::Whitespace as u8 => {
-                output.push(Token {
-                    t_type: cur_token_type,
-                    val: cur_token_string,
-                });
+            // ' ' \n
+            32 | 10 => {
+                if cur_token_type as u8 != TokenType::Whitespace as u8 {
+                    output.push(Token {
+                        t_type: cur_token_type,
+                        val: cur_token_string,
+                    });
+                }
                 cur_token_string = "".to_string();
                 cur_token_type = TokenType::Whitespace;
             }
             //Identifier
             //Keyword
             //Seperator
-            123 | 125 => {
-                output.push(Token {
-                    t_type: cur_token_type,
-                    val: cur_token_string,
-                });
+            // { } ( ) ;
+            123 | 125 | 40 | 41 | 59 => {
+                if cur_token_type as u8 != TokenType::Whitespace as u8 {
+                    output.push(Token {
+                        t_type: cur_token_type,
+                        val: cur_token_string,
+                    });
+                }
                 cur_token_type = TokenType::Seperator;
-                cur_token_string = c.to_string();
+                cur_token_string = (*c as char).to_string();
             }
             //Operator
-            '+' | '-' | '=' => {
+            42..=47 => {
                 cur_token_type = TokenType::Operator;
-                cur_token_string.push(c);
+                cur_token_string.push(*c as char);
             }
             //Literal
             //Comment
             //Catch all
             _ => {
-                println!("{}", c as u8);
                 if cur_token_type as u8 != TokenType::Identifier as u8
                     && cur_token_type as u8 != TokenType::Whitespace as u8
                 {
@@ -77,7 +81,7 @@ fn tokenise(input: String) -> Vec<Token> {
                     cur_token_string = "".to_string();
                 }
                 cur_token_type = TokenType::Identifier;
-                cur_token_string.push(c);
+                cur_token_string.push(*c as char);
             }
         }
     }
