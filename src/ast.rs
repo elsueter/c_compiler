@@ -7,7 +7,7 @@ use std::{
 };
 
 #[repr(u8)]
-#[derive(Clone, Copy)] //TODO remove this trait if needed. Copy is cheap but clone is not
+#[derive(Clone, Copy)] //TODO remove this trait if possible. Copy is cheap but clone is not
 enum TokenType {
     Type,
     Identifier,
@@ -24,6 +24,7 @@ struct Token {
     val: String,
 }
 
+//debug printing function
 impl Token {
     fn render(&self) -> String {
         let mut output = self.val.clone();
@@ -84,8 +85,10 @@ fn tokenise(input: String) -> Vec<Token> {
                 cur_token_string = (*c as char).to_string();
             }
             //Operator [ ]
-            42..=47 | 60..=62 | 91 | 93 => {
-                if cur_token_type as u8 != TokenType::Operator as u8 {
+            42..=46 | 60..=62 | 91 | 93 => {
+                if cur_token_type as u8 != TokenType::Operator as u8
+                    && cur_token_type as u8 != TokenType::Whitespace as u8
+                {
                     output.push(Token {
                         t_type: cur_token_type,
                         val: cur_token_string,
@@ -98,7 +101,7 @@ fn tokenise(input: String) -> Vec<Token> {
             //Literal
             //Comment
             //Any alphanumeric value or _ "
-            48..=57 | 65..=90 | 97..=122 | 95 | 34 => {
+            47..=57 | 65..=90 | 97..=122 | 95 | 34 => {
                 if cur_token_type as u8 != TokenType::Identifier as u8
                     && cur_token_type as u8 != TokenType::Whitespace as u8
                 {
@@ -121,6 +124,7 @@ fn tokenise(input: String) -> Vec<Token> {
     output
 }
 
+//Converts any given "Identifier" type to more specific token types based on the string
 fn get_type(input: &str) -> TokenType {
     let types = vec!["int", "void"];
     let keywords = vec!["if"];
@@ -130,6 +134,12 @@ fn get_type(input: &str) -> TokenType {
     if input.chars().next().unwrap() == '"' {
         return TokenType::Literal;
     }
+    //TODO unsafe and also not capturing corretctly
+    if input.chars().next().unwrap() == '/' {
+        return TokenType::Comment;
+    }
+
+    //these are safe and fine
     if input.chars().all(|x| x.is_numeric()) {
         return TokenType::Literal;
     }
@@ -146,19 +156,22 @@ fn get_type(input: &str) -> TokenType {
     return TokenType::Identifier;
 }
 
-pub fn run_lexer() {
+pub fn run_lexer(debug: bool) {
     //read file
     let lines = lines_from_file("test_code/input.c");
+    //tokenise string
     let mut tokens = tokenise(lines);
+    //update token metadata (identifier) with relevant type.
     for t in tokens.iter_mut() {
         if t.t_type as u8 == TokenType::Identifier as u8 {
             t.t_type = get_type(&t.val);
         }
     }
-    for t in tokens.iter_mut() {
-        println!("{}", t.render());
+    if debug {
+        for t in tokens.iter_mut() {
+            println!("{}", t.render());
+        }
     }
-    //tokenise file
     //put into AST
 }
 
