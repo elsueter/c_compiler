@@ -83,15 +83,22 @@ fn tokenise(input: String) -> Vec<Token> {
                 cur_token_type = TokenType::Seperator;
                 cur_token_string = (*c as char).to_string();
             }
-            //Operator
-            42..=47 | 60..=62 => {
+            //Operator [ ]
+            42..=47 | 60..=62 | 91 | 93 => {
+                if cur_token_type as u8 != TokenType::Operator as u8 {
+                    output.push(Token {
+                        t_type: cur_token_type,
+                        val: cur_token_string,
+                    });
+                    cur_token_string = "".to_string();
+                }
                 cur_token_type = TokenType::Operator;
                 cur_token_string.push(*c as char);
             }
             //Literal
             //Comment
-            //Any alphanumeric value or [ ] _
-            48..=57 | 65..=90 | 97..=122 | 91 | 93 | 95 | 34 => {
+            //Any alphanumeric value or _ "
+            48..=57 | 65..=90 | 97..=122 | 95 | 34 => {
                 if cur_token_type as u8 != TokenType::Identifier as u8
                     && cur_token_type as u8 != TokenType::Whitespace as u8
                 {
