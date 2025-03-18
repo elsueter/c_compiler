@@ -1,192 +1,102 @@
-// Grammar
-//
-// Example Code:
-//  int main(argc, argv){
-//      int foo = 0;
-//      if(foo != 10){
-//          return 0;
-//      }
-//      return 1;
-//  }
-//
-// type_specifieer
-//  : int
-//  | void
-//  | ... TODO
-//
-//  IDENTIFIER
-//  : [A-Za-z0-9_.]*
-//
-// assignment_operator
-//  : =
-//
-// arithmetic_operator
-//  : +
-//  | -
-//  | ... TODO
-//
-// prefix_operator
-//  : +
-//  | -
-//  | ++
-//  | ... TODO
-//
-// postfix_operator
-//  : +
-//  | -
-//  | ++
-//  | --
-//  | ... TODO
-//
-// operator
-//  : arithmetic_operator
-//  | ... TODO
-//
-// expression
-//  : identifier
-//  | expression operator expression
-//  | prefix_operator expression
-//  | expression postfix_operator
-//
-// declaration
-//  : type_specifier IDENTIFIER assignment_operator expression
-//
-// body
-//  : { expression* }
-//
-// conditional_statement
-//  : if ( expression ) body
-//
-// return_statement
-//  : return expression
-//
-enum TypeSpecifier {
-    Void,
-    Int,
+mod token_types;
+
+use std::{
+    fs::File,
+    io::{prelude::*, BufReader},
+    path::Path,
+};
+
+#[repr(u8)]
+#[derive(Clone, Copy)] //TODO remove this trait if needed. Copy is cheap but clone is not
+enum TokenType {
+    Identifier,
+    Keyword,
+    Seperator,
+    Operator,
+    Literal,
+    Comment,
+    Whitespace,
 }
 
-enum AssignmentOperator {
-    Equals,
+struct Token {
+    t_type: TokenType,
+    val: String,
 }
 
-enum ArithmeticOperator {
-    Plus,
-    Minus,
+fn lines_from_file(filename: impl AsRef<Path>) -> String {
+    let file = File::open(filename).expect("no such file");
+    let buf = BufReader::new(file);
+    let out: String = buf.lines().map(|line| line.expect("error")).collect();
+    out
 }
 
-enum PrefixOperator {
-    UnaryPrefixPlus,
-    UnaryPrefixMinus,
-}
-
-enum PostfixOperator {
-    UnaryPostfixPlus,
-    UnaryPostfixMinus,
-}
-
-enum Operator {
-    ArithmeticOperator,
-    PrefixOperator,
-    PostfixOperator,
-}
-
-enum Parameter {
-    Identifier(String),
-}
-
-enum ResolvableValue {
-    Value(i32),
-    Variable(String),
-    Expression(Expression),
-}
-
-//TODO - remove box usage, box is heap allocated and is very slow
-struct Expression {
-    lhs: Box<ResolvableValue>,
-    rhs: Option<RExpression>,
-}
-
-//TODO - remove box usage, box is heap allocated and is very slow
-struct RExpression {
-    op: Operator,
-    rhs: Box<ResolvableValue>,
-}
-
-impl Expression {
-    fn render(&self) -> String {
-        let mut return_string = String::from("");
-        match &(*self.lhs) {
-            ResolvableValue::Value(x) => return_string += &x.to_string(),
-            ResolvableValue::Variable(x) => return_string += x,
-            ResolvableValue::Expression(x) => return_string += &x.render(),
-        }
-
-        if let Some(rv) = &self.rhs {
-            return_string += match rv.op {
-                Operator::ArithmeticOperator => "+",
-                _ => "another_one",
-            };
-
-            match &(*rv.rhs) {
-                ResolvableValue::Value(x) => return_string += &x.to_string(),
-                ResolvableValue::Variable(x) => return_string += x,
-                ResolvableValue::Expression(x) => return_string += &x.render(),
+fn tokenise(input: String) -> Vec<Token> {
+    let mut output: Vec<Token> = vec![];
+    let mut cur_token_string = "".to_string();
+    let mut cur_token_type = TokenType::Whitespace;
+    for c in input.as_bytes() {
+        match c {
+            //Whitespace
+            // ' ' | '\n'
+            32 | 10 if cur_token_type as u8 != TokenType::Whitespace as u8 => {
+                output.push(Token {
+                    t_type: cur_token_type,
+                    val: cur_token_string,
+                });
+                cur_token_string = "".to_string();
+                cur_token_type = TokenType::Whitespace;
+            }
+            //Identifier
+            //Keyword
+            //Seperator
+            123 | 125 => {
+                output.push(Token {
+                    t_type: cur_token_type,
+                    val: cur_token_string,
+                });
+                cur_token_type = TokenType::Seperator;
+                cur_token_string = c.to_string();
+            }
+            //Operator
+            '+' | '-' | '=' => {
+                cur_token_type = TokenType::Operator;
+                cur_token_string.push(c);
+            }
+            //Literal
+            //Comment
+            //Catch all
+            _ => {
+                println!("{}", c as u8);
+                if cur_token_type as u8 != TokenType::Identifier as u8
+                    && cur_token_type as u8 != TokenType::Whitespace as u8
+                {
+                    output.push(Token {
+                        t_type: cur_token_type,
+                        val: cur_token_string,
+                    });
+                    cur_token_string = "".to_string();
+                }
+                cur_token_type = TokenType::Identifier;
+                cur_token_string.push(c);
             }
         }
-
-        return_string
     }
+    output.push(Token {
+        t_type: cur_token_type,
+        val: cur_token_string,
+    });
+    cur_token_string = "".to_string();
+    output
 }
 
-struct Func {
-    identifier: TypeSpecifier,
-    name: String,
-    parameters: Vec<Parameter>,
-    body: Vec<Expression>,
-}
-
-impl Func {
-    fn render(&self) -> String {
-        let mut return_string = String::from("");
-
-        match &self.identifier {
-            TypeSpecifier::Void => return_string.push_str("void"),
-            TypeSpecifier::Int => return_string.push_str("int"),
-        }
-
-        return_string += " ";
-
-        return_string.push_str(&self.name);
-
-        return_string += "(";
-
-        for p in self.parameters.iter() {}
-
-        return_string += ")\n{\n    ";
-
-        for e in self.body.iter() {
-            return_string += &e.render();
-            return_string += ";\n";
-        }
-
-        return_string += "}";
-
-        return_string
+pub fn run_lexer() {
+    //read file
+    let lines = lines_from_file("test_code/input.c");
+    let tokens = tokenise(lines);
+    for t in tokens {
+        println!("{}, {}", t.t_type as u8, t.val);
     }
+    //tokenise file
+    //put into AST
 }
 
-pub fn test() {
-    let temp: Func = Func {
-        identifier: TypeSpecifier::Void,
-        name: "test_func".to_string(),
-        parameters: vec![],
-        body: vec![Expression {
-            lhs: Box::new(ResolvableValue::Variable("i".to_string())),
-            rhs: Some(RExpression {
-                op: Operator::ArithmeticOperator,
-                rhs: Box::new(ResolvableValue::Value(10)),
-            }),
-        }],
-    };
-    println!("{}", temp.render());
-}

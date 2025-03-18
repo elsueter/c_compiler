@@ -1,5 +1,5 @@
 mod ast;
 
 fn main() {
-    ast::test();
+    ast::run_lexer();
 }
