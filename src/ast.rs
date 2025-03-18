@@ -9,6 +9,7 @@ use std::{
 #[repr(u8)]
 #[derive(Clone, Copy)] //TODO remove this trait if needed. Copy is cheap but clone is not
 enum TokenType {
+    Type,
     Identifier,
     Keyword,
     Seperator,
@@ -21,6 +22,26 @@ enum TokenType {
 struct Token {
     t_type: TokenType,
     val: String,
+}
+
+impl Token {
+    fn render(&self) -> String {
+        let mut output = self.val.clone();
+
+        match self.t_type as u8 {
+            0 => output += " : Type",
+            1 => output += " : Identifier",
+            2 => output += " : Keyword",
+            3 => output += " : Seperator",
+            4 => output += " : Operator",
+            5 => output += " : Literal",
+            6 => output += " : Comment",
+            7 => output += " : Whitespace",
+            _ => (),
+        }
+
+        output
+    }
 }
 
 fn lines_from_file(filename: impl AsRef<Path>) -> String {
@@ -63,14 +84,14 @@ fn tokenise(input: String) -> Vec<Token> {
                 cur_token_string = (*c as char).to_string();
             }
             //Operator
-            42..=47 => {
+            42..=47 | 60..=62 => {
                 cur_token_type = TokenType::Operator;
                 cur_token_string.push(*c as char);
             }
             //Literal
             //Comment
-            //Catch all
-            _ => {
+            //Any alphanumeric value or [ ] _
+            48..=57 | 65..=90 | 97..=122 | 91 | 93 | 95 | 34 => {
                 if cur_token_type as u8 != TokenType::Identifier as u8
                     && cur_token_type as u8 != TokenType::Whitespace as u8
                 {
@@ -83,22 +104,52 @@ fn tokenise(input: String) -> Vec<Token> {
                 cur_token_type = TokenType::Identifier;
                 cur_token_string.push(*c as char);
             }
+            _ => (), //?
         }
     }
     output.push(Token {
         t_type: cur_token_type,
         val: cur_token_string,
     });
-    cur_token_string = "".to_string();
     output
+}
+
+fn get_type(input: &str) -> TokenType {
+    let types = vec!["int", "void"];
+    let keywords = vec!["if"];
+    let operators = vec!["=="];
+
+    //potentially unsafe but if an empty string hits here then other things are wrong
+    if input.chars().next().unwrap() == '"' {
+        return TokenType::Literal;
+    }
+    if input.chars().all(|x| x.is_numeric()) {
+        return TokenType::Literal;
+    }
+    if types.contains(&input) {
+        return TokenType::Type;
+    }
+    if keywords.contains(&input) {
+        return TokenType::Keyword;
+    }
+    if operators.contains(&input) {
+        return TokenType::Operator;
+    }
+
+    return TokenType::Identifier;
 }
 
 pub fn run_lexer() {
     //read file
     let lines = lines_from_file("test_code/input.c");
-    let tokens = tokenise(lines);
-    for t in tokens {
-        println!("{}, {}", t.t_type as u8, t.val);
+    let mut tokens = tokenise(lines);
+    for t in tokens.iter_mut() {
+        if t.t_type as u8 == TokenType::Identifier as u8 {
+            t.t_type = get_type(&t.val);
+        }
+    }
+    for t in tokens.iter_mut() {
+        println!("{}", t.render());
     }
     //tokenise file
     //put into AST
