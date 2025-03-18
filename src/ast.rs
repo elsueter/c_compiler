@@ -52,6 +52,7 @@ fn lines_from_file(filename: impl AsRef<Path>) -> String {
     out
 }
 
+//TODO make the list of tokens this can read complete. It is currently not
 fn tokenise(input: String) -> Vec<Token> {
     let mut output: Vec<Token> = vec![];
     let mut cur_token_string = "".to_string();
@@ -125,7 +126,7 @@ fn tokenise(input: String) -> Vec<Token> {
 }
 
 //Converts any given "Identifier" type to more specific token types based on the string
-fn get_type(input: &str) -> TokenType {
+fn parse_type(input: &str) -> TokenType {
     let types = vec!["int", "void"];
     let keywords = vec!["if"];
     let operators = vec!["=="];
@@ -161,12 +162,13 @@ pub fn run_lexer(debug: bool) {
     let lines = lines_from_file("test_code/input.c");
     //tokenise string
     let mut tokens = tokenise(lines);
-    //update token metadata (identifier) with relevant type.
+    //update token metadata (identifier) with relevant type. (this is what makes this a lexer)
     for t in tokens.iter_mut() {
         if t.t_type as u8 == TokenType::Identifier as u8 {
-            t.t_type = get_type(&t.val);
+            t.t_type = parse_type(&t.val);
         }
     }
+    //temp debug switch for "rendering" code
     if debug {
         for t in tokens.iter_mut() {
             println!("{}", t.render());
