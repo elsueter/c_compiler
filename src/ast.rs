@@ -52,15 +52,17 @@ enum Keyword {
 }
 #[derive(PartialEq)]
 enum Seperator {
-    Any, //Temp value to allow a generic seperator
-    CurlyBrace,
-    Brace,
+    Any, //Temp value to allow a generic seperator TODO remove
+    OCB,
+    CCB,
+    OB,
+    CB,
     SemiColon,
 }
 
 #[derive(PartialEq)]
 enum Operator {
-    Any, //Temp value to allow a generic seperator
+    Any, //Temp value to allow a generic seperator TODO remove
     Add,
     Minus,
     Divide,
@@ -129,6 +131,7 @@ impl Token {
         let types = vec!["int", "void"];
         let keywords = vec!["if"];
         let operators = vec!["+", "-", "=", "==", "[", "]"];
+        let seperators = vec!["(", ")", "{", "}", ";"];
 
         if types.contains(&input_string) {
             //TODO implement matching for each case
@@ -136,14 +139,23 @@ impl Token {
         } else if keywords.contains(&input_string) {
             input_token = Token::Keyword(Keyword::If)
         } else if operators.contains(&input_string) {
-            match input_string {
-                "+" => input_token = Token::Operator(Operator::Add),
-                "-" => input_token = Token::Operator(Operator::Minus),
-                "=" => input_token = Token::Operator(Operator::Equal),
-                "==" => input_token = Token::Operator(Operator::Comparitor),
-                "[" => input_token = Token::Operator(Operator::OSB),
-                "]" => input_token = Token::Operator(Operator::CSB),
-                _ => (),
+            input_token = match input_string {
+                "+" => Token::Operator(Operator::Add),
+                "-" => Token::Operator(Operator::Minus),
+                "=" => Token::Operator(Operator::Equal),
+                "==" => Token::Operator(Operator::Comparitor),
+                "[" => Token::Operator(Operator::OSB),
+                "]" => Token::Operator(Operator::CSB),
+                _ => Token::Operator(Operator::Add), //Catch all - TODO handle this better
+            }
+        } else if seperators.contains(&input_string) {
+            input_token = match input_string {
+                "(" => Token::Seperator(Seperator::OB),
+                ")" => Token::Seperator(Seperator::CB),
+                "{" => Token::Seperator(Seperator::OCB),
+                "}" => Token::Seperator(Seperator::CCB),
+                ";" => Token::Seperator(Seperator::SemiColon),
+                _ => Token::Seperator(Seperator::OB), //Catch all - TODO handle this better
             }
         }
 
@@ -283,8 +295,10 @@ impl Seperator {
     fn to_string(&self) -> String {
         match self {
             Seperator::Any => "Any".to_string(),
-            Seperator::CurlyBrace => "CurlyBrace".to_string(),
-            Seperator::Brace => "Brace".to_string(),
+            Seperator::OCB => "{".to_string(),
+            Seperator::CCB => "}".to_string(),
+            Seperator::OB => "(".to_string(),
+            Seperator::CB => ")".to_string(),
             Seperator::SemiColon => "SemiColon".to_string(),
         }
     }
