@@ -54,6 +54,17 @@ macro_rules! make_enum {
                     $( $name::$variant => $variant_literal, ) *
                 }
             }
+            fn new(input_string: &str) -> $name {
+                match input_string{
+                    $( $variant_literal => $name::$variant, )*
+                    _ => $name::Any,
+                }
+            }
+            fn get_literals() -> Vec<String>{
+                let mut out = vec![];
+                $( out.push($variant_literal.to_string());)*
+                out
+            }
         }
     }
 }
@@ -61,9 +72,11 @@ macro_rules! make_enum {
 //------------------- Basic Types --------------------------
 
 make_enum! (Type VARIANTS{
+    Any,
     Int,
     Void,
 }VARIANT_LITERAL{
+    "",
     "int",
     "void",
 });
@@ -71,9 +84,11 @@ make_enum! (Type VARIANTS{
 type Identifier = String;
 
 make_enum! (Keyword VARIANTS{
+    Any,
     If,
     While,
 }VARIANT_LITERAL{
+    "",
     "if",
     "while",
 });
@@ -127,7 +142,7 @@ type Comment = String;
 //Some type verification needed
 type Whitespace = String;
 
-//------------------- Compound Types --------------------------
+//-----],-------------- Compound Types --------------------------
 
 struct Parameter {
     ts: Type,
@@ -170,47 +185,28 @@ enum Token {
     Whitespace(Whitespace),
 }
 
-static operators2 = vec!["test"];
-
 impl Token {
-    fn new(mut input_token: Token, input_string: &str) -> Token {
-        let types = vec!["int", "void"];
-        let keywords = vec!["if"];
-        let operators = vec!["+", "-", "=", "==", "[", "]"];
-        let seperators = vec!["(", ")", "{", "}", ";"];
+    fn new(input_token: Token, input_string: &str) -> Token {
+        let types = Type::get_literals();
+        let keywords = Keyword::get_literals();
+        let operators = Operator::get_literals();
+        let seperators = Seperator::get_literals();
 
-        if types.contains(&input_string) {
-            //TODO implement matching for each case
-            input_token = Token::Type(Type::Int);
-        } else if keywords.contains(&input_string) {
-            input_token = Token::Keyword(Keyword::If)
-        } else if operators.contains(&input_string) {
-            input_token = match input_string {
-                "+" => Token::Operator(Operator::Add),
-                "-" => Token::Operator(Operator::Minus),
-                "=" => Token::Operator(Operator::Equal),
-                "==" => Token::Operator(Operator::Comparitor),
-                "[" => Token::Operator(Operator::OSB),
-                "]" => Token::Operator(Operator::CSB),
-                _ => Token::Operator(Operator::Add), //Catch all - TODO handle this better
-            }
-        } else if seperators.contains(&input_string) {
-            input_token = match input_string {
-                "(" => Token::Seperator(Seperator::OB),
-                ")" => Token::Seperator(Seperator::CB),
-                "{" => Token::Seperator(Seperator::OCB),
-                "}" => Token::Seperator(Seperator::CCB),
-                ";" => Token::Seperator(Seperator::SemiColon),
-                _ => Token::Seperator(Seperator::OB), //Catch all - TODO handle this better
-            }
+        //Checks the input string to generate a new token of the matching form
+        //TODO restructure in some form, messy nested if's & repeated code
+        if types.contains(&input_string.to_string()) {
+            return Token::Type(Type::new(input_string));
+        } else if keywords.contains(&input_string.to_string()) {
+            return Token::Keyword(Keyword::new(input_string));
+        } else if operators.contains(&input_string.to_string()) {
+            return Token::Operator(Operator::new(input_string));
+        } else if seperators.contains(&input_string.to_string()) {
+            return Token::Seperator(Seperator::new(input_string));
         }
 
+        //match the input token and insert
         match input_token {
-            Token::Type(x) => Token::Type(x),
             Token::Identifier(_) => Token::Identifier(input_string.to_string()),
-            Token::Keyword(x) => Token::Keyword(x),
-            Token::Seperator(x) => Token::Seperator(x),
-            Token::Operator(x) => Token::Operator(x),
             Token::Literal(_) => Token::Literal(input_string.to_string()),
             Token::Comment(_) => Token::Comment(input_string.to_string()),
             Token::Whitespace(_) => Token::Whitespace(input_string.to_string()),
