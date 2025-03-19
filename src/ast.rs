@@ -34,34 +34,67 @@ use std::{
 //
 // declaration      : type_specifier identifier assignment_operator expression
 
+// -------------------- Macro for defining enums and linked functions -----------
+
+macro_rules! make_enum {
+    (
+        $name:ident $array:ident {
+            $( $variant:ident, )*
+        } $array2:ident{
+            $( $variant_literal:literal, )*
+        }
+    ) => {
+        #[derive(PartialEq)]
+        enum $name {
+            $( $variant, )*
+        }
+        impl $name{
+            fn to_string(&self) -> &str{
+                match self{
+                    $( $name::$variant => $variant_literal, ) *
+                }
+            }
+        }
+    }
+}
+
 //------------------- Basic Types --------------------------
 
-#[derive(PartialEq)]
-enum Type {
+make_enum! (Type VARIANTS{
     Int,
     Void,
-}
+}VARIANT_LITERAL{
+    "int",
+    "void",
+});
 
 type Identifier = String;
 
-#[derive(PartialEq)]
-enum Keyword {
+make_enum! (Keyword VARIANTS{
     If,
     While,
-    //...
-}
-#[derive(PartialEq)]
-enum Seperator {
+}VARIANT_LITERAL{
+    "if",
+    "while",
+});
+
+make_enum! (Seperator VARIANTS{
     Any, //Temp value to allow a generic seperator TODO remove
     OCB,
     CCB,
     OB,
     CB,
     SemiColon,
-}
+}VARIANT_LITERAL{
+    "",
+    "{",
+    "}",
+    "(",
+    ")",
+    ";",
+});
 
-#[derive(PartialEq)]
-enum Operator {
+make_enum! (Operator VARIANTS {
     Any, //Temp value to allow a generic seperator TODO remove
     Add,
     Minus,
@@ -72,7 +105,18 @@ enum Operator {
     Equal,
     OSB,
     CSB,
-}
+}VARIANT_LITERAL{
+    "",
+    "+",
+    "-",
+    "/",
+    "*",
+    ",",
+    "==",
+    "=",
+    "[",
+    "]",
+});
 
 //Some type verification needed
 type Literal = String;
@@ -125,6 +169,8 @@ enum Token {
     Comment(Comment),
     Whitespace(Whitespace),
 }
+
+static operators2 = vec!["test"];
 
 impl Token {
     fn new(mut input_token: Token, input_string: &str) -> Token {
@@ -259,64 +305,16 @@ impl Token {
         let mut output = "".to_string();
 
         match self {
-            Token::Type(x) => output += &(x.to_string() + " : Type"),
+            Token::Type(x) => output += &(x.to_string().to_owned() + " : Type"),
             Token::Identifier(x) => output += &(x.to_owned() + " : Identifier"),
-            Token::Keyword(x) => output += &(x.to_string() + " : Keyword"),
-            Token::Seperator(x) => output += &(x.to_string() + " : Seperator"),
-            Token::Operator(x) => output += &(x.to_string() + " : Operator"),
+            Token::Keyword(x) => output += &(x.to_string().to_owned() + " : Keyword"),
+            Token::Seperator(x) => output += &(x.to_string().to_owned() + " : Seperator"),
+            Token::Operator(x) => output += &(x.to_string().to_owned() + " : Operator"),
             Token::Literal(x) => output += &(x.to_owned() + " : Literal"),
             Token::Comment(x) => output += &(x.to_owned() + " : Comment"),
             Token::Whitespace(x) => output += &(x.to_owned() + " : Whitespace"),
         }
 
         output
-    }
-}
-
-impl Type {
-    fn to_string(&self) -> String {
-        match self {
-            Type::Int => "Int".to_string(),
-            Type::Void => "Void".to_string(),
-        }
-    }
-}
-
-impl Keyword {
-    fn to_string(&self) -> String {
-        match self {
-            Keyword::If => "If".to_string(),
-            Keyword::While => "While".to_string(),
-        }
-    }
-}
-
-impl Seperator {
-    fn to_string(&self) -> String {
-        match self {
-            Seperator::Any => "Any".to_string(),
-            Seperator::OCB => "{".to_string(),
-            Seperator::CCB => "}".to_string(),
-            Seperator::OB => "(".to_string(),
-            Seperator::CB => ")".to_string(),
-            Seperator::SemiColon => "SemiColon".to_string(),
-        }
-    }
-}
-
-impl Operator {
-    fn to_string(&self) -> String {
-        match self {
-            Operator::Any => "Any".to_string(),
-            Operator::Add => "Add".to_string(),
-            Operator::Minus => "Minus".to_string(),
-            Operator::Divide => "Divide".to_string(),
-            Operator::Multiply => "Multiply".to_string(),
-            Operator::Comma => "Comma".to_string(),
-            Operator::Comparitor => "Comparitor".to_string(),
-            Operator::Equal => "Equal".to_string(),
-            Operator::OSB => "[".to_string(),
-            Operator::CSB => "]".to_string(),
-        }
     }
 }
