@@ -26,7 +26,7 @@ struct Token {
 
 //debug printing function
 impl Token {
-    fn render(&self) -> String {
+    fn to_string(&self) -> String {
         let mut output = self.val.clone();
 
         match self.t_type as u8 {
@@ -45,7 +45,8 @@ impl Token {
     }
 }
 
-fn lines_from_file(filename: impl AsRef<Path>) -> String {
+//read in a file and return it as a string
+fn string_from_file(filename: impl AsRef<Path>) -> String {
     let file = File::open(filename).expect("no such file");
     let buf = BufReader::new(file);
     let out: String = buf.lines().map(|line| line.expect("error")).collect();
@@ -159,7 +160,7 @@ fn parse_type(input: &str) -> TokenType {
 
 pub fn run_lexer(debug: bool) {
     //read file
-    let lines = lines_from_file("test_code/input.c");
+    let lines = string_from_file("test_code/input.c");
     //tokenise string
     let mut tokens = tokenise(lines);
     //update token metadata (identifier) with relevant type. (this is what makes this a lexer)
@@ -168,12 +169,35 @@ pub fn run_lexer(debug: bool) {
             t.t_type = parse_type(&t.val);
         }
     }
-    //temp debug switch for "rendering" code
+    //temp debug switch for printing out the current tokens
     if debug {
         for t in tokens.iter_mut() {
-            println!("{}", t.render());
+            println!("{}", t.to_string());
         }
     }
     //put into AST
+    let mut mode = "default";
+    let mut current_node: Vec<Token> = vec![];
+    for i in 0..tokens.len() {
+        if mode == "default" {
+            match tokens[i].t_type {
+                TokenType::Type => {
+                    //This should be a reliable way to differentiate this as a function signature
+                    //rather than a declaration but this feels messy
+                    //TODO - fix and re-implement
+                    if tokens[i + 2].val == "(" {
+                        mode = "function sig";
+                    }
+                }
+                TokenType::Identifier => (),
+                TokenType::Keyword => (),
+                TokenType::Seperator => (),
+                TokenType::Operator => (),
+                TokenType::Literal => (),
+                TokenType::Comment => (),
+                TokenType::Whitespace => (),
+            }
+        } else if mode == "function sig" {
+        }
+    }
 }
-
