@@ -72,7 +72,7 @@ macro_rules! make_enum {
 //------------------- Basic Types --------------------------
 
 make_enum! (Type VARIANTS{
-    Any,
+    Any, //Temp value to allow a generic seperator TODO remove
     Int,
     Void,
 }VARIANT_LITERAL{
@@ -84,7 +84,7 @@ make_enum! (Type VARIANTS{
 type Identifier = String;
 
 make_enum! (Keyword VARIANTS{
-    Any,
+    Any, //Temp value to allow a generic seperator TODO remove
     If,
     While,
 }VARIANT_LITERAL{
@@ -142,7 +142,7 @@ type Comment = String;
 //Some type verification needed
 type Whitespace = String;
 
-//-----],-------------- Compound Types --------------------------
+//------------------- Compound Types --------------------------
 
 struct Parameter {
     ts: Type,
@@ -168,8 +168,16 @@ enum Expression {
     },
 }
 
+type Body = Vec<Statement>;
+
 enum Statement {
     Expression(Expression),
+    Function {
+        t: Type,
+        id: Identifier,
+        pl: ParameterList,
+        b: Body,
+    },
     //CondtitionalStatement(ConditionalStatement),
 }
 
@@ -281,6 +289,15 @@ fn tokenise(input: String) -> Vec<Token> {
     output
 }
 
+fn check_pattern(token_string: Vec<Token>, pattern: Vec<Token>) -> bool {
+    for i in 0..token_string.len() {
+        if token_string[i] != pattern[i] {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn run_lexer(debug: bool) {
     //read file
     let lines = string_from_file("test_code/input.c");
@@ -291,6 +308,22 @@ pub fn run_lexer(debug: bool) {
         for t in tokens.iter_mut() {
             println!("{}", t.to_string());
         }
+    }
+    //create AST
+
+    //Bare State
+    //Statement
+
+    let mut state = "none";
+
+    let func_pattern = vec![
+        Token::Type,
+        Token::Identifier,
+        Token::Seperator(Seperator::OB),
+    ];
+
+    for t in tokens {
+        if state == "none" {}
     }
 }
 
