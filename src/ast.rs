@@ -7,6 +7,8 @@ use std::{
     path::Path,
 };
 
+// Context Free Grammar
+
 // type_specifier   : Int
 //                  | Void
 //                  | ...
@@ -50,11 +52,6 @@ macro_rules! make_enum {
             $( $variant, )*
         }
         impl $name{
-            //fn to_string(&self) -> &str{
-            //    match self{
-            //        $( $name::$variant => $variant_literal, ) *
-            //    }
-            //}
             fn new(input_string: &str) -> $name {
                 match input_string{
                     $( $variant_literal => $name::$variant, )*
@@ -240,6 +237,7 @@ fn string_from_file(filename: impl AsRef<Path>) -> String {
 }
 
 //TODO make the list of tokens this can read complete. It is currently not
+//TODO lots of .to_string() methods being used here, might need looking at
 fn tokenise(input: String) -> Vec<Token> {
     let mut output: Vec<Token> = vec![];
     let mut cur_token_string = "".to_string();
