@@ -1,6 +1,7 @@
 mod token_types;
 
 use std::{
+    fmt,
     fs::File,
     io::{prelude::*, BufReader},
     path::Path,
@@ -49,11 +50,11 @@ macro_rules! make_enum {
             $( $variant, )*
         }
         impl $name{
-            fn to_string(&self) -> &str{
-                match self{
-                    $( $name::$variant => $variant_literal, ) *
-                }
-            }
+            //fn to_string(&self) -> &str{
+            //    match self{
+            //        $( $name::$variant => $variant_literal, ) *
+            //    }
+            //}
             fn new(input_string: &str) -> $name {
                 match input_string{
                     $( $variant_literal => $name::$variant, )*
@@ -61,9 +62,16 @@ macro_rules! make_enum {
                 }
             }
             fn get_literals() -> Vec<String>{
-                let mut out = vec![];
-                $( out.push($variant_literal.to_string());)*
+                let out = vec![
+                $( ($variant_literal.to_string()),)*];
                 out
+            }
+        }
+        impl fmt::Display for $name{
+            fn fmt(&self, f:&mut fmt::Formatter) -> fmt::Result{
+                match self{
+                    $( $name::$variant => write!(f, "{}", $variant_literal), ) *
+                }
             }
         }
     }
@@ -95,8 +103,8 @@ make_enum! (Keyword VARIANTS{
 
 make_enum! (Seperator VARIANTS{
     Any, //Temp value to allow a generic seperator TODO remove
-    OCB,
-    CCB,
+    Ocb,
+    Ccb,
     OB,
     CB,
     SemiColon,
@@ -118,8 +126,8 @@ make_enum! (Operator VARIANTS {
     Comma,
     Comparitor,
     Equal,
-    OSB,
-    CSB,
+    Osb,
+    Csb,
 }VARIANT_LITERAL{
     "",
     "+",
@@ -161,7 +169,7 @@ enum Expression {
         op: Operator,
         exp: Box<Expression>,
     },
-    SubExpression {
+    Full {
         lhs: Box<Expression>,
         op: Operator,
         rhs: Box<Expression>,
@@ -306,7 +314,7 @@ pub fn run_lexer(debug: bool) {
     //temp debug switch for printing out the current tokens
     if debug {
         for t in tokens.iter_mut() {
-            println!("{}", t.to_string());
+            println!("{}", t);
         }
     }
     //create AST
@@ -316,34 +324,30 @@ pub fn run_lexer(debug: bool) {
 
     let mut state = "none";
 
-    let func_pattern = vec![
+    let func_pattern = (
         Token::Type,
         Token::Identifier,
         Token::Seperator(Seperator::OB),
-    ];
+    );
 
     for t in tokens {
         if state == "none" {}
     }
 }
 
-//---------------------- Pretty printing functions ---------------------------------
+//---------------------- Print formatting ---------------------------------
 
-impl Token {
-    fn to_string(&self) -> String {
-        let mut output = "".to_string();
-
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Token::Type(x) => output += &(x.to_string().to_owned() + " : Type"),
-            Token::Identifier(x) => output += &(x.to_owned() + " : Identifier"),
-            Token::Keyword(x) => output += &(x.to_string().to_owned() + " : Keyword"),
-            Token::Seperator(x) => output += &(x.to_string().to_owned() + " : Seperator"),
-            Token::Operator(x) => output += &(x.to_string().to_owned() + " : Operator"),
-            Token::Literal(x) => output += &(x.to_owned() + " : Literal"),
-            Token::Comment(x) => output += &(x.to_owned() + " : Comment"),
-            Token::Whitespace(x) => output += &(x.to_owned() + " : Whitespace"),
+            Token::Type(x) => write!(f, "{} : Type", x),
+            Token::Identifier(x) => write!(f, "{} : Identifier", x),
+            Token::Keyword(x) => write!(f, "{} : Keyword", x),
+            Token::Seperator(x) => write!(f, "{} : Seperator", x),
+            Token::Operator(x) => write!(f, "{} : Operator", x),
+            Token::Literal(x) => write!(f, "{} : Literal", x),
+            Token::Comment(x) => write!(f, "{} : Comment", x),
+            Token::Whitespace(x) => write!(f, "{} : Whitespace", x),
         }
-
-        output
     }
 }
