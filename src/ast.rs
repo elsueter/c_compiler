@@ -67,7 +67,7 @@ macro_rules! make_enum {
         impl fmt::Display for $name{
             fn fmt(&self, f:&mut fmt::Formatter) -> fmt::Result{
                 match self{
-                    $( $name::$variant => write!(f, "{}", $variant_literal), ) *
+                    $( $name::$variant => write!(f, "{}", $variant_literal),) *
                 }
             }
         }
@@ -226,6 +226,13 @@ impl Token {
             _ => Token::Whitespace("".to_string()),
         }
     }
+    fn matches(&self, other: &Token) -> bool {
+        println!("{:?}", std::mem::discriminant(other));
+        if std::mem::discriminant(self) == std::mem::discriminant(other) {
+            return true;
+        }
+        false
+    }
 }
 
 //read in a file and return it as a string
@@ -295,9 +302,11 @@ fn tokenise(input: String) -> Vec<Token> {
     output
 }
 
+//TODO implement method to check the sub-variant and match against it. This currently only matches
+//the parent variant which means it doesnt care what the literal type is etc.
 fn check_pattern(token_string: Vec<Token>, pattern: Vec<Token>) -> bool {
-    for i in 0..token_string.len() {
-        if token_string[i] != pattern[i] {
+    for i in 0..pattern.len() {
+        if !token_string[i].matches(&pattern[i]) {
             return false;
         }
     }
@@ -322,14 +331,20 @@ pub fn run_lexer(debug: bool) {
 
     let mut state = "none";
 
-    let func_pattern = (
-        Token::Type,
-        Token::Identifier,
+    //This may need refining as it currently matches to:
+    //  <type> <identifier> (
+    let func_pattern: Vec<Token> = vec![
+        Token::Type(Type::Any),
+        Token::Identifier("".to_string()),
         Token::Seperator(Seperator::OB),
-    );
+    ];
 
-    for t in tokens {
-        if state == "none" {}
+    if state == "none" {
+        if check_pattern(tokens, func_pattern) {
+            println!("In Function");
+        } else {
+            println!("Not in function");
+        }
     }
 }
 
