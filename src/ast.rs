@@ -226,10 +226,69 @@ impl Token {
             _ => Token::Whitespace("".to_string()),
         }
     }
+    //TODO
+    //I really really dislike how this function currently works.
+    //In order to fetch a value from an enum you need to make use of pattern matching
+    //and due to the setup here each enum holds a different type so you cannot make a
+    //a generic getter or do any kind of structural check
+    //
+    //you can make use of std::mem::discriminant(x) to get the type of enum back out
+    //but this does not return the value but rather the raw reprisentation of the
+    //variant of the enum.
+    //
+    //After a lot of faffing I could not figure out a good way to resolve this so resolved
+    //to making this. It is a lot of code, very slow and not nice.
+    //
+    //Due to this it may be worth not using enums at all for this structure, the benefits
+    //of using enums here is it allows for some more neuonced type usage within the
+    //code structure but it leads to headaches like this and some of the other matching
+    //(see function above...)
     fn matches(&self, other: &Token) -> bool {
-        if std::mem::discriminant(self) == std::mem::discriminant(other) {
-            return true;
+        println!("{}, {}", self, other);
+        match (self, other) {
+            (Token::Type(x), Token::Type(y)) => {
+                if x == y || *x == Type::Any || *y == Type::Any {
+                    return true;
+                }
+            }
+            (Token::Identifier(x), Token::Identifier(y)) => {
+                if x == y || *x == "" || *y == "" {
+                    return true;
+                }
+            }
+            (Token::Keyword(x), Token::Keyword(y)) => {
+                if x == y || *x == Keyword::Any || *y == Keyword::Any {
+                    return true;
+                }
+            }
+            (Token::Seperator(x), Token::Seperator(y)) => {
+                if x == y {
+                    return true;
+                }
+            }
+            (Token::Operator(x), Token::Operator(y)) => {
+                if x == y || *x == Operator::Any || *y == Operator::Any {
+                    return true;
+                }
+            }
+            (Token::Literal(x), Token::Literal(y)) => {
+                if x == y || *x == "" || *y == "" {
+                    return true;
+                }
+            }
+            (Token::Comment(x), Token::Comment(y)) => {
+                if x == y || *x == "" || *y == "" {
+                    return true;
+                }
+            }
+            (Token::Whitespace(x), Token::Whitespace(y)) => {
+                if x == y || *x == "" || *y == "" {
+                    return true;
+                }
+            }
+            _ => (),
         }
+
         false
     }
 }
