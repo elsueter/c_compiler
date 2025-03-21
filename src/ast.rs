@@ -227,7 +227,6 @@ impl Token {
         }
     }
     fn matches(&self, other: &Token) -> bool {
-        println!("{:?}", std::mem::discriminant(other));
         if std::mem::discriminant(self) == std::mem::discriminant(other) {
             return true;
         }
