@@ -1,5 +1,3 @@
-mod token_types;
-
 use std::{
     fmt,
     fs::File,
