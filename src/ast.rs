@@ -1,5 +1,4 @@
 use std::{
-    ascii::AsciiExt,
     fmt,
     fs::File,
     io::{prelude::*, BufReader},
@@ -372,9 +371,9 @@ fn tokenise(input: String) -> Vec<Token> {
     output
 }
 
-fn check_pattern(token_string: &Vec<Token>, pattern: &Vec<Token>) -> bool {
+fn check_pattern(token_string: &[Token], idx: usize, pattern: &[Token]) -> bool {
     for i in 0..pattern.len() {
-        if !token_string[i].matches(&pattern[i]) {
+        if !token_string[idx + i].matches(&pattern[i]) {
             return false;
         }
     }
@@ -393,7 +392,7 @@ fn run_parser(input: Vec<Token>) -> Vec<Statement> {
     let mut output: Vec<Statement> = vec![];
 
     for i in 0..input.len() {
-        if check_pattern(&input, &func_pattern) {
+        if check_pattern(&input, i, &func_pattern) {
             println!("in function");
         } else {
             println!("not in function");
