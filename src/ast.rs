@@ -1,4 +1,5 @@
 use std::{
+    ascii::AsciiExt,
     fmt,
     fs::File,
     io::{prelude::*, BufReader},
@@ -175,6 +176,11 @@ type Body = Vec<Statement>;
 
 enum Statement {
     Expression(Expression),
+    FunctionProto {
+        t: Type,
+        id: Identifier,
+        pl: ParameterList,
+    },
     Function {
         t: Type,
         id: Identifier,
@@ -197,33 +203,42 @@ enum Token {
 }
 
 impl Token {
-    fn new(input_token: Token, input_string: &str) -> Token {
+    fn new(input_type: Token, input_string: &str) -> Token {
         let types = Type::get_literals();
         let keywords = Keyword::get_literals();
         let operators = Operator::get_literals();
         let seperators = Seperator::get_literals();
 
-        //Checks the input string to generate a new token of the matching form
-        //TODO restructure in some form, messy nested if's & repeated code
-        if types.contains(&input_string.to_string()) {
-            return Token::Type(Type::new(input_string));
-        } else if keywords.contains(&input_string.to_string()) {
-            return Token::Keyword(Keyword::new(input_string));
-        } else if operators.contains(&input_string.to_string()) {
-            return Token::Operator(Operator::new(input_string));
-        } else if seperators.contains(&input_string.to_string()) {
-            return Token::Seperator(Seperator::new(input_string));
-        }
-
-        //match the input token and insert
-        match input_token {
-            Token::Identifier(_) => Token::Identifier(input_string.to_string()),
-            Token::Literal(_) => Token::Literal(input_string.to_string()),
-            Token::Comment(_) => Token::Comment(input_string.to_string()),
+        match input_type {
             Token::Whitespace(_) => Token::Whitespace(input_string.to_string()),
-            _ => Token::Whitespace("".to_string()),
+            _ => {
+                //Checks the input string to generate a new token of the matching form
+                //TODO restructure in some form, messy nested if's & repeated code while also being slow
+                if types.contains(&input_string.to_string()) {
+                    return Token::Type(Type::new(input_string));
+                } else if keywords.contains(&input_string.to_string()) {
+                    return Token::Keyword(Keyword::new(input_string));
+                } else if operators.contains(&input_string.to_string()) {
+                    return Token::Operator(Operator::new(input_string));
+                } else if seperators.contains(&input_string.to_string()) {
+                    return Token::Seperator(Seperator::new(input_string));
+                //This clause is not perfect and will need improving TODO
+                //.unwrap() is potentially unsafe
+                } else if input_string.chars().next().unwrap() == '/' {
+                    return Token::Comment(input_string.to_string());
+                //This clause is not perfect and will need improving TODO
+                //.unwrap() is potentially unsafe and parsing u64 is slow
+                } else if input_string.chars().next().unwrap() == '"'
+                    || input_string.parse::<f64>().is_ok()
+                {
+                    return Token::Literal(input_string.to_string());
+                }
+
+                Token::Identifier(input_string.to_string())
+            }
         }
     }
+
     //TODO
     //I really really dislike how this function currently works.
     //In order to fetch a value from an enum you need to make use of pattern matching
@@ -242,7 +257,6 @@ impl Token {
     //code structure but it leads to headaches like this and some of the other matching
     //(see function above...)
     fn matches(&self, other: &Token) -> bool {
-        println!("{}, {}", self, other);
         match (self, other) {
             (Token::Type(x), Token::Type(y)) => {
                 if x == y || *x == Type::Any || *y == Type::Any {
@@ -316,8 +330,6 @@ fn tokenise(input: String) -> Vec<Token> {
                 cur_token_string = "".to_string();
                 cur_token_type = Token::Whitespace("".to_string());
             }
-            //Identifier
-            //Keyword
             //Seperator
             // { } ( ) ;
             123 | 125 | 40 | 41 | 59 => {
@@ -338,6 +350,8 @@ fn tokenise(input: String) -> Vec<Token> {
                 cur_token_type = Token::Operator(Operator::Add);
                 cur_token_string.push(*c as char);
             }
+            //Identifier
+            //Keyword
             //Literal
             //Comment
             //Any alphanumeric value or _ "
@@ -358,15 +372,35 @@ fn tokenise(input: String) -> Vec<Token> {
     output
 }
 
-//TODO implement method to check the sub-variant and match against it. This currently only matches
-//the parent variant which means it doesnt care what the literal type is etc.
-fn check_pattern(token_string: Vec<Token>, pattern: Vec<Token>) -> bool {
+fn check_pattern(token_string: &Vec<Token>, pattern: &Vec<Token>) -> bool {
     for i in 0..pattern.len() {
         if !token_string[i].matches(&pattern[i]) {
             return false;
         }
     }
     true
+}
+
+fn run_parser(input: Vec<Token>) -> Vec<Statement> {
+    //This may need refining as it currently matches to:
+    //  <type> <identifier> (
+    let func_pattern: Vec<Token> = vec![
+        Token::Type(Type::Any),
+        Token::Identifier("".to_string()),
+        Token::Seperator(Seperator::OB),
+    ];
+
+    let mut output: Vec<Statement> = vec![];
+
+    for i in 0..input.len() {
+        if check_pattern(&input, &func_pattern) {
+            println!("in function");
+        } else {
+            println!("not in function");
+        }
+    }
+
+    output
 }
 
 pub fn run_lexer(debug: bool) {
@@ -381,27 +415,7 @@ pub fn run_lexer(debug: bool) {
         }
     }
     //create AST
-
-    //Bare State
-    //Statement
-
-    let mut state = "none";
-
-    //This may need refining as it currently matches to:
-    //  <type> <identifier> (
-    let func_pattern: Vec<Token> = vec![
-        Token::Type(Type::Any),
-        Token::Identifier("".to_string()),
-        Token::Seperator(Seperator::OB),
-    ];
-
-    if state == "none" {
-        if check_pattern(tokens, func_pattern) {
-            println!("In Function");
-        } else {
-            println!("Not in function");
-        }
-    }
+    let ast = run_parser(tokens);
 }
 
 //---------------------- Print formatting ---------------------------------
