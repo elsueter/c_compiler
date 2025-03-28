@@ -7,3 +7,8 @@ int main(int one, int two){
     }
     return 0;
 }
+
+int another()
+
+int another(){
+}

@@ -199,6 +199,7 @@ enum Token {
     Literal(Literal),
     Comment(Comment),
     Whitespace(Whitespace),
+    Any,
 }
 
 impl Token {
@@ -221,15 +222,11 @@ impl Token {
                     return Token::Operator(Operator::new(input_string));
                 } else if seperators.contains(&input_string.to_string()) {
                     return Token::Seperator(Seperator::new(input_string));
-                //This clause is not perfect and will need improving TODO
-                //.unwrap() is potentially unsafe
-                } else if input_string.chars().next().unwrap() == '/' {
+                } else if input_string.starts_with("//") {
                     return Token::Comment(input_string.to_string());
                 //This clause is not perfect and will need improving TODO
                 //.unwrap() is potentially unsafe and parsing u64 is slow
-                } else if input_string.chars().next().unwrap() == '"'
-                    || input_string.parse::<f64>().is_ok()
-                {
+                } else if input_string.starts_with('"') || input_string.parse::<f64>().is_ok() {
                     return Token::Literal(input_string.to_string());
                 }
 
@@ -263,7 +260,7 @@ impl Token {
                 }
             }
             (Token::Identifier(x), Token::Identifier(y)) => {
-                if x == y || *x == "" || *y == "" {
+                if x == y || x.is_empty() || y.is_empty() {
                     return true;
                 }
             }
@@ -283,17 +280,17 @@ impl Token {
                 }
             }
             (Token::Literal(x), Token::Literal(y)) => {
-                if x == y || *x == "" || *y == "" {
+                if x == y || x.is_empty() || y.is_empty() {
                     return true;
                 }
             }
             (Token::Comment(x), Token::Comment(y)) => {
-                if x == y || *x == "" || *y == "" {
+                if x == y || x.is_empty() || y.is_empty() {
                     return true;
                 }
             }
             (Token::Whitespace(x), Token::Whitespace(y)) => {
-                if x == y || *x == "" || *y == "" {
+                if x == y || x.is_empty() || y.is_empty() {
                     return true;
                 }
             }
@@ -371,32 +368,72 @@ fn tokenise(input: String) -> Vec<Token> {
     output
 }
 
-fn check_pattern(token_string: &[Token], idx: usize, pattern: &[Token]) -> bool {
-    for i in 0..pattern.len() {
-        if !token_string[idx + i].matches(&pattern[i]) {
-            return false;
+fn check_pattern(token_string: &[Token], idx: usize, pattern: &[Token]) -> (bool, usize) {
+    let mut repeat = false;
+    let mut b_depth = 0;
+    let mut j = 0;
+    let mut i = 0;
+    while i < pattern.len() && j + idx < token_string.len() {
+        if pattern[i] == Token::Any {
+            repeat = true;
+            i += 1;
+            continue;
         }
+
+        if let Token::Seperator(x) = &token_string[idx + j] {
+            match x {
+                Seperator::OB | Seperator::Ocb => b_depth += 1,
+                Seperator::CB | Seperator::Ccb => b_depth -= 1,
+                _ => (),
+            }
+        }
+
+        if repeat {
+            if token_string[idx + j].matches(&pattern[i]) && b_depth == 0 {
+                repeat = false;
+                i += 1;
+            }
+            j += 1;
+            continue;
+        } else if !token_string[idx + j].matches(&pattern[i]) {
+            return (false, i - 2);
+        }
+        i += 1;
+        j += 1;
     }
-    true
+
+    //check for if end of file is found before matching a repeating token
+    if repeat {
+        (false, j - 1)
+    } else {
+        (true, j - 1)
+    }
 }
 
 fn run_parser(input: Vec<Token>) -> Vec<Statement> {
-    //This may need refining as it currently matches to:
-    //  <type> <identifier> (
     let func_pattern: Vec<Token> = vec![
         Token::Type(Type::Any),
         Token::Identifier("".to_string()),
         Token::Seperator(Seperator::OB),
+        Token::Any,
+        Token::Seperator(Seperator::CB),
+        Token::Seperator(Seperator::Ocb),
+        Token::Any,
+        Token::Seperator(Seperator::Ccb),
     ];
 
     let mut output: Vec<Statement> = vec![];
 
-    for i in 0..input.len() {
-        if check_pattern(&input, i, &func_pattern) {
-            println!("in function");
+    let mut i = 0;
+    while i < input.len() {
+        let (in_func, idx) = check_pattern(&input, i, &func_pattern);
+        i += idx;
+        if in_func {
+            println!("in_function");
         } else {
             println!("not in function");
         }
+        i += 1;
     }
 
     output
@@ -430,6 +467,7 @@ impl fmt::Display for Token {
             Token::Literal(x) => write!(f, "{} : Literal", x),
             Token::Comment(x) => write!(f, "{} : Comment", x),
             Token::Whitespace(x) => write!(f, "{} : Whitespace", x),
+            Token::Any => write!(f, ""),
         }
     }
 }
