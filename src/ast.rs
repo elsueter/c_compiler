@@ -301,6 +301,23 @@ impl Token {
     }
 }
 
+type Pattern = Vec<Token>;
+
+fn get_patterns() -> Vec<Pattern> {
+    let output = vec![vec![
+        Token::Type(Type::Any),
+        Token::Identifier("".to_string()),
+        Token::Seperator(Seperator::OB),
+        Token::Any,
+        Token::Seperator(Seperator::CB),
+        Token::Seperator(Seperator::Ocb),
+        Token::Any,
+        Token::Seperator(Seperator::Ccb),
+    ]];
+
+    output
+}
+
 //read in a file and return it as a string
 fn string_from_file(filename: impl AsRef<Path>) -> String {
     let file = File::open(filename).expect("no such file");
@@ -411,22 +428,12 @@ fn check_pattern(token_string: &[Token], idx: usize, pattern: &[Token]) -> (bool
 }
 
 fn run_parser(input: Vec<Token>) -> Vec<Statement> {
-    let func_pattern: Vec<Token> = vec![
-        Token::Type(Type::Any),
-        Token::Identifier("".to_string()),
-        Token::Seperator(Seperator::OB),
-        Token::Any,
-        Token::Seperator(Seperator::CB),
-        Token::Seperator(Seperator::Ocb),
-        Token::Any,
-        Token::Seperator(Seperator::Ccb),
-    ];
-
+    let patterns = get_patterns();
     let mut output: Vec<Statement> = vec![];
 
     let mut i = 0;
     while i < input.len() {
-        let (in_func, idx) = check_pattern(&input, i, &func_pattern);
+        let (in_func, idx) = check_pattern(&input, i, &patterns[0]);
         i += idx;
         if in_func {
             println!("in_function");
@@ -470,4 +477,16 @@ impl fmt::Display for Token {
             Token::Any => write!(f, ""),
         }
     }
+}
+
+//---------------------- Testing ---------------------------------
+
+#[test]
+fn first_test() {
+    let lines = string_from_file("test_code/input.c");
+    let tokens = tokenise(lines);
+    let patterns = get_patterns();
+
+    let (in_func, _idx) = check_pattern(&tokens, 0, &patterns[0]);
+    assert!(in_func);
 }
