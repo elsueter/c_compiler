@@ -354,7 +354,7 @@ fn tokenise(input: String) -> Vec<Token> {
             }
             //Operator [ ]
             42..=46 | 60..=62 | 91 | 93 => {
-                if cur_token_type != Token::Operator(Operator::Any)
+                if !cur_token_type.matches(&Token::Operator(Operator::Any))
                     && cur_token_type != Token::Whitespace("".to_string())
                 {
                     output.push(Token::new(cur_token_type, &cur_token_string));
